@@ -1,0 +1,57 @@
+#!/bin/bash
+# description: firewall
+# 
+# chkconfig: 2345 80 30
+# processname: firewall
+# Should-Start: $network
+# Should-Stop: 
+# Default-Start: 2 3 4 5
+### END INIT INFO
+
+# source function library
+
+FWC=$(which iptables)
+
+test -x $FWC || { echo "iptables nao esta instalado"; 
+	if [ "$1" = "stop" ]; then exit 0;
+	else exit 5; fi; }
+
+case "$1" in
+    start)
+        echo "Iniciando o Firewall da Laticinios Maralat";
+	/etc/firewall/firewall.rules
+        ;;
+
+    stop)
+	echo "Parando o Firewall da Laticinios Maralat";
+        $FWC -F INPUT
+        $FWC -F OUTPUT
+        $FWC -F FORWARD
+        $FWC -P INPUT ACCEPT
+        $FWC -P OUTPUT ACCEPT
+        $FWC -P FORWARD ACCEPT
+        $FWC -F
+        $FWC -X
+        $FWC -t nat -F
+        $FWC -t nat -X
+        $FWC -t mangle -F
+        $FWC -t mangle -X
+        ;;
+
+    restart|reload)
+        $0 stop
+        $0 start
+        ;;
+
+    status)
+       $FWC -t mangle -L
+        $FWC -t filter -L
+        $FWC -t nat -L
+        ;;
+
+    *)
+        echo "Sintaxe: $0 {start|stop|restart|reload|status}"
+        exit 1
+        ;;
+esac
+exit $RETVAL

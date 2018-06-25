@@ -1,0 +1,244 @@
+#!/bin/bash
+hora=`/bin/date +%H%M`
+if `[ "$hora" -gt "0759" ] && [ "$hora" -lt "1129" ] || [ "$hora" -gt "1359" ] && [ "$hora" -lt "1629" ] `; then
+op=1;
+else
+op=2;
+fi
+
+# Limpando regrans anteriores do iptables
+iptables -F
+iptables -X
+iptables -F INPUT
+iptables -F OUTPUT
+iptables -F FORWARD
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables -t nat -F
+iptables -t nat -X
+iptables -t mangle -F
+iptables -t mangle -X
+
+
+# Ativando modulos padrões 
+modprobe iptable_nat
+modprobe iptable_mangle
+modprobe ipt_MARK
+modprobe ip_conntrack_ftp
+modprobe ip_nat_ftp
+
+# Bloqueando todas as portas
+iptables -P INPUT DROP
+iptables -P FORWARD DROP
+
+# Definindo arquivo contendo os ips liberados ao facebook
+permitidos=$(egrep -v "(^#|^$)" /etc/squid/acessototal) 
+
+#iptables -A FORWARD -m string --algo bm --string "BitTorrent" -j DROP
+iptables -A FORWARD -m string --algo bm --string "BitTorrent protocol" -j DROP
+iptables -A FORWARD -m string --algo bm --string "peer_id=" -j DROP
+iptables -A FORWARD -m string --algo bm --string ".torrent" -j DROP
+iptables -A FORWARD -m string --algo bm --string "announce.php?passkey=" -j DROP
+iptables -A FORWARD -m string --algo bm --string "torrent" -j DROP
+iptables -A FORWARD -m string --algo bm --string "announce" -j DROP
+iptables -A FORWARD -m string --algo bm --string "info_hash" -j DROP
+iptables -A FORWARD -m string --string "get_peers" --algo bm -j DROP
+iptables -A FORWARD -m string --string "announce_peer" --algo bm -j DROP
+iptables -A FORWARD -m string --string "find_node" --algo bm -j DROP
+
+ 
+
+##BLOQUEIO DO FACEBOOK
+FACEBOOK_IP_RANGE="31.13.64.0-31.13.127.255 31.13.24.0-31.13.31.255 74.119.76.0-74.119.79.255 69.63.176.0-69.63.191.255 69.171.224.0-69.171.255.255 66.220.144.0-66.220.159.255 204.15.20.0-204.15.23.255 173.252.64.0-173.252.127.255 199.16.156.6"
+iptables -N FACEBOOK
+
+## FACEBOOK DENY
+for face in $FACEBOOK_IP_RANGE; do
+iptables -I FORWARD -m tcp -p tcp -m iprange --dst-range $face --dport 443 -j FACEBOOK
+iptables -I FORWARD -m tcp -p tcp -m iprange --dst-range $face --dport 80 -j FACEBOOK
+iptables -A FORWARD -i eth1 -m string --algo bm --string "twitter.com" -j DROP  #BLOQUEIA GERAL 
+done
+
+FACEBOOK_ALLOW="$permitidos" #MSR_LIBERADO #Aqui libera os permitidos.
+
+for MSR_LIBERADO in $FACEBOOK_ALLOW; do
+iptables -I FACEBOOK -s $MSR_LIBERADO -j ACCEPT
+done
+
+if [ $op -eq "1" ]; then #Aqui caso esteja no horário de expediente ele é bloqueado
+echo "Bloqueando"
+iptables -A FACEBOOK -j REJECT
+fi
+
+if [ $op -eq "2" ]; then #E caso esteja fora do horário de serviço é liberado
+echo "Liberando"
+iptables -A FACEBOOK -j ACCEPT
+fi
+
+
+# FreeGate
+iptables -I FORWARD -p tcp -m multiport --dports 553,2479,3848,5492,8580,16242 -j DROP
+iptables -I FORWARD -p udp -m multiport --dports 553,2479,3848,5492,8580,16242 -j DROP
+iptables -I FORWARD -m string --string "dongtaiwang" --algo bm -j DROP
+
+# 
+
+# Loopback
+iptables -A OUTPUT -s 127.0.0.1 -d 127.0.0.1 -j ACCEPT
+iptables -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A FORWARD -m state --state INVALID -j DROP
+
+
+
+# Ativando modulos de segurança no kernel
+echo 1 > /proc/sys/net/ipv4/tcp_syncookies
+echo 1 > /proc/sys/net/ipv4/icmp_echo_ignore_broadcasts
+echo 1 > /proc/sys/net/ipv4/icmp_ignore_bogus_error_responses
+
+# Ativando o compartilhamento de rede
+echo 1 > /proc/sys/net/ipv4/ip_forward
+
+# Bloqueando ataques comuns
+iptables -A FORWARD -p tcp -m limit --limit 1/s -j ACCEPT
+iptables -A FORWARD -p icmp --icmp-type echo-request -m limit --limit 1/s -j ACCEPT
+
+
+# Dns
+iptables -A OUTPUT -p tcp --dport 53 -j ACCEPT
+iptables -A OUTPUT -p udp --dport 53 -j ACCEPT
+
+# Ftp
+iptables -A INPUT  -j ACCEPT -p tcp --sport 21
+iptables -A INPUT  -j ACCEPT -p udp --dport 21
+
+# Squid
+iptables -A OUTPUT -p tcp --dport 3128 -j ACCEPT
+
+# VOIp
+iptables -A INPUT  -j ACCEPT -p tcp --sport 5060:5061
+iptables -A INPUT  -j ACCEPT -p udp --dport 5060:5061
+iptables -A FORWARD -j ACCEPT -p tcp --sport 5060:5061
+iptables -A FORWARD -j ACCEPT -p udp --dport 5060:5061
+
+# Bloqueando portas P2P
+iptables -A FORWARD -d 216.35.208.0/24 -j REJECT
+iptables -A FORWARD -p TCP --dport 6346 -j REJECT
+iptables -A FORWARD -p TCP --dport 6346 -j REJECT
+iptables -A FORWARD -d 209.61.186.0/24 -j REJECT
+iptables -A FORWARD -d 64.49.201.0/24 -j REJECT
+iptables -A FORWARD -d 209.25.178.0/24 -j REJECT
+iptables -A FORWARD -d 206.142.53.0/24 -j REJECT
+iptables -A FORWARD -p TCP --dport 1214 -j REJECT
+iptables -A FORWARD -d 213.248.112.0/24 -j REJECT
+iptables -A FORWARD -p TCP --dport 1214 -j REJECT
+iptables -A FORWARD -p TCP --dport 6346 -j REJECT
+iptables -A FORWARD -d 64.245.58.0/23 -j REJECT
+
+## Bloqueando pings e protegendo contra IP spoofing e pacotes invÃ¡lidos..."
+iptables -A INPUT -p icmp --icmp-type echo-request -j DROP
+echo 1 > /proc/sys/net/ipv4/conf/default/rp_filter
+iptables -A INPUT -m state --state INVALID -j DROP
+
+################################
+# Liberando algumas portas
+iptables -A INPUT -p tcp --dport    53 -j ACCEPT
+iptables -A INPUT -p udp --dport    53 -j ACCEPT
+iptables -A INPUT -p tcp --dport    21 -j ACCEPT
+iptables -A INPUT -p tcp --dport    21 -j ACCEPT
+iptables -A INPUT -p tcp --dport    20 -j ACCEPT
+iptables -A INPUT -p udp --dport    20 -j ACCEPT
+iptables -A INPUT -p tcp --dport    25 -j ACCEPT
+iptables -A INPUT -p udp --dport    25 -j ACCEPT
+iptables -A INPUT -p tcp --dport    80 -j ACCEPT
+iptables -A INPUT -p udp --dport    80 -j ACCEPT
+iptables -A INPUT -p tcp --dport    22 -j ACCEPT
+iptables -A INPUT -p udp --dport    22 -j ACCEPT
+iptables -A INPUT -p tcp --dport   443 -j ACCEPT
+iptables -A INPUT -p tcp --dport   993 -j ACCEPT
+iptables -A INPUT -p tcp --dport   587 -j ACCEPT
+iptables -A INPUT -p tcp --dport  3306 -j ACCEPT
+iptables -A INPUT -p tcp --dport  2030 -j ACCEPT
+iptables -A INPUT -p tcp --dport  1433 -j ACCEPT
+iptables -A INPUT -p tcp --dport  3128 -j ACCEPT
+iptables -A INPUT -p tcp --dport  9494 -j ACCEPT
+iptables -A INPUT -p tcp --dport  9393 -j ACCEPT
+iptables -A INPUT -p tcp --dport  9090 -j ACCEPT
+iptables -A INPUT -p tcp --dport  8080 -j ACCEPT
+iptables -A INPUT -p udp --dport  8080 -j ACCEPT
+iptables -A INPUT -p tcp --dport  10000 -j ACCEPT
+iptables -A INPUT -p tcp --dport  20000 -j ACCEPT
+iptables -A INPUT -p tcp --dport  37777 -j ACCEPT
+iptables -A INPUT -p tcp --dport  37775 -j ACCEPT
+iptables -A INPUT  -s 10.0.0.0/255.255.0.0 -j ACCEPT
+iptables -A INPUT  -s 192.168.1.0/255.255.0.0 -j ACCEPT
+iptables -A INPUT -p tcp --dport  22	-j ACCEPT
+iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+
+# Liberando rotas internas
+iptables -A FORWARD -p tcp --dport    20 -j ACCEPT
+iptables -A FORWARD -p tcp --dport    25 -j ACCEPT
+iptables -A FORWARD -p udp --dport    25 -j ACCEPT
+iptables -A FORWARD -p tcp --dport    80 -j ACCEPT
+iptables -A FORWARD -p udp --dport    80 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  3128 -j ACCEPT
+iptables -A FORWARD -p tcp --dport   587 -j ACCEPT
+iptables -A FORWARD -p tcp --dport   993 -j ACCEPT
+iptables -A FORWARD -p tcp --dport   443 -j ACCEPT
+iptables -A FORWARD -p udp --dport   443 -j ACCEPT
+iptables -A FORWARD -p tcp --dport    22 -j ACCEPT
+iptables -A FORWARD -p udp --dport    22 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  3306 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  1433 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  9494 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  9393 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  9090 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  8080 -j ACCEPT
+iptables -A FORWARD -p udp --dport  8080 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  10000 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  20000 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  37777 -j ACCEPT
+iptables -A FORWARD -p tcp --dport  37775 -j ACCEPT
+iptables -A FORWARD -s 10.0.0.0/255.255.0.0 -j ACCEPT
+iptables -A FORWARD -s 192.168.1.0/255.255.0.0 -j ACCEPT
+iptables -A FORWARD -p tcp --dport     22 -j ACCEPT
+iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# sistemas Palm
+iptables -A PREROUTING -t nat -p tcp -i eth1 -d 187.00.205.000  --dport 8080 -j DNAT --to 10.0.0.166:8080
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 8080 -j DNAT --to 10.0.0.166:8080
+iptables -t nat -A POSTROUTING -d 10.0.0.166 -o eth1 -p tcp --dport 8080 -j MASQUERADE
+
+
+iptables -A PREROUTING -t nat -p tcp -i ppp0 -d 189.00.165.000  --dport 8080 -j DNAT --to 10.0.0.166:8080
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 8080 -j DNAT --to 10.0.0.166:8080
+iptables -t nat -A POSTROUTING -d 10.0.0.166 -o ppp0 -p tcp --dport 8080 -j MASQUERADE
+
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9292 -j DNAT --to 10.0.0.112:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9090 -j DNAT --to 10.0.0.254:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9494 -j DNAT --to 10.0.0.200:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9393 -j DNAT --to 10.0.0.136:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9191 -j DNAT --to 10.0.0.106:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 8989 -j DNAT --to 10.0.0.166:3389
+
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9292 -j DNAT --to 10.0.0.112:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9090 -j DNAT --to 10.0.0.254:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9494 -j DNAT --to 10.0.0.200:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9393 -j DNAT --to 10.0.0.136:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9191 -j DNAT --to 10.0.0.106:3389
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 8989 -j DNAT --to 10.0.0.166:3389
+
+## Dvr 01
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 37777 -j DNAT --to 10.0.0.108:37777
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 37777 -j DNAT --to 10.0.0.108:37777
+
+## Dvr 02
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 37776 -j DNAT --to 10.0.0.118:37776
+iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 37776 -j DNAT --to 10.0.0.118:37776
+
+
+# Mascaramento de rota
+iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
+iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
+
