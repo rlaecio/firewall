@@ -18,12 +18,12 @@ test -x $FWC || { echo "iptables nao esta instalado";
 
 case "$1" in
     start)
-        echo "Iniciando o Firewall da Laticinios Maralat";
+        echo "Iniciando o Firewall ...";
 	/etc/firewall/firewall.rules
         ;;
 
     stop)
-	echo "Parando o Firewall da Laticinios Maralat";
+	echo "Parando o Firewall ...";
         $FWC -F INPUT
         $FWC -F OUTPUT
         $FWC -F FORWARD

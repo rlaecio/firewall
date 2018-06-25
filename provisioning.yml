@@ -11,7 +11,29 @@
          - libapache2-mod-php5 
          - ssh
          - vsftpd
+         - dhcpd
      
+    - name: ansible create directory with mode setting example
+      file:
+        path: /etc/firewall
+        state: directory
+        mode: "u=rw,g=wx,o=rwx"
+      become: yes
+
     - name: start apache
       service: name=apache2 state=started enabled=yes
+      become: yes
+      
+    - name: copy firewall
+      copy: src=firewall dest=/etc/init.d/firewall mode=0770
+      become: yes
+
+    - name: copy firewall.rules 
+      copy: src=firewall.rules dest=/etc/firewall/firewall.rules mode=0770
+      become: yes
+
+    - name: copy dhcpd
+      copy: src=dhcpd.conf dest=/etc/dhcp/dhcpd.conf mode=0770
+      become: yes
+
 
