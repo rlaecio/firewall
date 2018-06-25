@@ -37,7 +37,7 @@
       become: yes
 
 
-    - name: Add user roque.souza
+    - name: Add user teste
       user:
         name: teste
         comment: "Usuario de teste"
@@ -45,5 +45,6 @@
         createhome: yes
         password: '$6$5rfJCWV/$1VLnFeh9pVtLV2K4ei93EuTz0GZKSnNevEaSlKbhnW9P/wtGGcBwDnUMPyrKUprXNebU2XnNCFGq00UEhrdyb0'
         append: yes
+      become: yes
 
 
