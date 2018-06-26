@@ -60,7 +60,7 @@
         comment: "Usuario de teste"
         home: /home/teste
         createhome: yes
-        password: '$6$5rfJCWV/$1VLnFeh9pVtLV2K4ei93EuTz0GZKSnNevEaSlKbhnW9P/wtGGcBwDnUMPyrKUprXNebU2XnNCFGq00UEhrdyb0'
+        password: '$6$vLlOsNs0$7xg.kd2DeiTI/kT/dSwB5eUi.FIOH1QawaHYrMWEqmQ0IPD.I15eOo4hexsOlURYZ35LinP75tPztS35HheTJ0'
         append: yes
       become: yes
       
@@ -91,8 +91,7 @@
       become: yes
 
     - name: cria o vsftpd.userlist
-      tasks:
-        - shell: 'echo teste > /etc/vsftpd.userlist'
+      shell: 'echo teste > /etc/vsftpd.userlist'
       become: yes
 
     - name: start vsftpd
