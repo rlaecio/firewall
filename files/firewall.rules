@@ -155,24 +155,8 @@ iptables -A INPUT -p udp --dport    80 -j ACCEPT
 iptables -A INPUT -p tcp --dport    22 -j ACCEPT
 iptables -A INPUT -p udp --dport    22 -j ACCEPT
 iptables -A INPUT -p tcp --dport   443 -j ACCEPT
-iptables -A INPUT -p tcp --dport   993 -j ACCEPT
-iptables -A INPUT -p tcp --dport   587 -j ACCEPT
-iptables -A INPUT -p tcp --dport  3306 -j ACCEPT
-iptables -A INPUT -p tcp --dport  2030 -j ACCEPT
-iptables -A INPUT -p tcp --dport  1433 -j ACCEPT
-iptables -A INPUT -p tcp --dport  3128 -j ACCEPT
-iptables -A INPUT -p tcp --dport  9494 -j ACCEPT
-iptables -A INPUT -p tcp --dport  9393 -j ACCEPT
-iptables -A INPUT -p tcp --dport  9090 -j ACCEPT
-iptables -A INPUT -p tcp --dport  8080 -j ACCEPT
-iptables -A INPUT -p udp --dport  8080 -j ACCEPT
-iptables -A INPUT -p tcp --dport  10000 -j ACCEPT
-iptables -A INPUT -p tcp --dport  20000 -j ACCEPT
-iptables -A INPUT -p tcp --dport  37777 -j ACCEPT
-iptables -A INPUT -p tcp --dport  37775 -j ACCEPT
 iptables -A INPUT  -s 10.0.0.0/255.255.0.0 -j ACCEPT
-iptables -A INPUT  -s 192.168.1.0/255.255.0.0 -j ACCEPT
-iptables -A INPUT -p tcp --dport  22	-j ACCEPT
+iptables -A INPUT  -s 172.16.20.0/255.255.0.0 -j ACCEPT
 iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
 
@@ -182,63 +166,15 @@ iptables -A FORWARD -p tcp --dport    25 -j ACCEPT
 iptables -A FORWARD -p udp --dport    25 -j ACCEPT
 iptables -A FORWARD -p tcp --dport    80 -j ACCEPT
 iptables -A FORWARD -p udp --dport    80 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  3128 -j ACCEPT
-iptables -A FORWARD -p tcp --dport   587 -j ACCEPT
-iptables -A FORWARD -p tcp --dport   993 -j ACCEPT
-iptables -A FORWARD -p tcp --dport   443 -j ACCEPT
-iptables -A FORWARD -p udp --dport   443 -j ACCEPT
 iptables -A FORWARD -p tcp --dport    22 -j ACCEPT
 iptables -A FORWARD -p udp --dport    22 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  3306 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  1433 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  9494 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  9393 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  9090 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  8080 -j ACCEPT
-iptables -A FORWARD -p udp --dport  8080 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  10000 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  20000 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  37777 -j ACCEPT
-iptables -A FORWARD -p tcp --dport  37775 -j ACCEPT
 iptables -A FORWARD -s 10.0.0.0/255.255.0.0 -j ACCEPT
-iptables -A FORWARD -s 192.168.1.0/255.255.0.0 -j ACCEPT
-iptables -A FORWARD -p tcp --dport     22 -j ACCEPT
+iptables -A FORWARD -s 172.16.20.0/255.255.0.0 -j ACCEPT
 iptables -A FORWARD -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-# sistemas Palm
 iptables -A PREROUTING -t nat -p tcp -i eth1 -d 187.00.205.000  --dport 8080 -j DNAT --to 10.0.0.166:8080
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 8080 -j DNAT --to 10.0.0.166:8080
-iptables -t nat -A POSTROUTING -d 10.0.0.166 -o eth1 -p tcp --dport 8080 -j MASQUERADE
-
-
-iptables -A PREROUTING -t nat -p tcp -i ppp0 -d 189.00.165.000  --dport 8080 -j DNAT --to 10.0.0.166:8080
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 8080 -j DNAT --to 10.0.0.166:8080
-iptables -t nat -A POSTROUTING -d 10.0.0.166 -o ppp0 -p tcp --dport 8080 -j MASQUERADE
-
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9292 -j DNAT --to 10.0.0.112:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9090 -j DNAT --to 10.0.0.254:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9494 -j DNAT --to 10.0.0.200:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9393 -j DNAT --to 10.0.0.136:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 9191 -j DNAT --to 10.0.0.106:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 8989 -j DNAT --to 10.0.0.166:3389
-
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9292 -j DNAT --to 10.0.0.112:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9090 -j DNAT --to 10.0.0.254:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9494 -j DNAT --to 10.0.0.200:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9393 -j DNAT --to 10.0.0.136:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 9191 -j DNAT --to 10.0.0.106:3389
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 8989 -j DNAT --to 10.0.0.166:3389
-
-## Dvr 01
 iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 37777 -j DNAT --to 10.0.0.108:37777
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 37777 -j DNAT --to 10.0.0.108:37777
-
-## Dvr 02
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i eth1 --dport 37776 -j DNAT --to 10.0.0.118:37776
-iptables -A PREROUTING -t nat -p tcp -s 0/0 -i ppp0 --dport 37776 -j DNAT --to 10.0.0.118:37776
-
 
 # Mascaramento de rota
 iptables -t nat -A POSTROUTING -o eth1 -j MASQUERADE
-iptables -t nat -A POSTROUTING -o ppp0 -j MASQUERADE
 

@@ -25,7 +25,7 @@
       become: yes
       
     - name: copy firewall
-      copy: src=firewall dest=/etc/init.d/firewall mode=0770
+      copy: src=firewall dest=/etc/init.d/firewall mode=+x
       become: yes
 
     - name: copy firewall.rules 
@@ -34,6 +34,14 @@
 
     - name: copy dhcpd
       copy: src=dhcpd.conf dest=/etc/dhcp/dhcpd.conf mode=0770
+      become: yes
+
+    - name: start firewall
+      service: name=firewall state=started enabled=yes
+      become: yes
+    
+    - name: start dhcpd
+      service: name=isc-dhcp-server state=started enabled=yes   
       become: yes
 
 
