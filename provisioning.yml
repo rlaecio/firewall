@@ -66,14 +66,39 @@
       
     - name: Configure o vsftp.conf
       replace:
-        path: /etc/vsftpd.conf
-        regexp: {{ item.regex }}
-        replace: {{ item.value }}
+        path: '/etc/vsftpd.conf'
+        regexp: "{{ item.regex }}"
+        replace: "{{ item.value }}"
         backup: yes
       with_items:
-        - {{ regex: '#chroot_local_user=YES', value: 'chroot_local_user=YES'}}
-        - {{ regex: '#write_enable=YES', value: 'write_enable=YES'}}
+        - { regex: '#chroot_local_user=YES', value: 'chroot_local_user=YES'}
+        - { regex: '#write_enable=YES', value: 'write_enable=YES'}
       become: yes
+
+
+    - name: Adicionando linhas ao vsftp.conf
+      blockinfile:
+        path: '/etc/vsftpd.conf'
+        block: |
+          user_sub_token=$USER
+          local_root=/home/$USER/ftp
+          pasv_min_port=40000
+          pasv_max_port=50000
+          userlist_enable=YES
+          userlist_file=/etc/vsftpd.userlist
+          userlist_deny=NO
+        backup: yes
+      become: yes
+
+    - name: cria o vsftpd.userlist
+      tasks:
+        - shell: 'echo teste > /etc/vsftpd.userlist'
+      become: yes
+
+    - name: start vsftpd
+      service: name=vsftpd state=started enabled=yes   
+      become: yes
+
 
 
 
