@@ -66,6 +66,14 @@
       
     - name: Configure o vsftp.conf
       replace:
-        path: 
+        path: /etc/vsftpd.conf
+        regexp: {{ item.regex }}
+        replace: {{ item.value }}
+        backup: yes
+      with_items:
+        - {{ regex: '#chroot_local_user=YES', value: 'chroot_local_user=YES'}}
+        - {{ regex: '#write_enable=YES', value: 'write_enable=YES'}}
+      become: yes
+
 
 
